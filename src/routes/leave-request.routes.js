@@ -3,9 +3,11 @@ import {
   approveLeaveRequest,
   cancelLeaveRequest,
   createLeaveRequest,
+  getEmployeeLeaves,
   getLeaveRequest,
   rejectLeaveRequest,
 } from "../controllers/leave-request.controller.js";
+import { protect } from "../middleware/auth.middleware.js";
 import {
   validateApproveLeaveRequest,
   validateCreateLeaveRequest,
@@ -14,10 +16,11 @@ import {
 
 const router = express.Router();
 
-router.post("/create", createLeaveRequest, (req, res) => {
-  console.log(req);
-});
+router.use(protect);
+
+router.post("/create", validateCreateLeaveRequest, createLeaveRequest);
 router.get("/get-all", getLeaveRequest);
+router.get("/employee/:employeeId/leaves", getEmployeeLeaves);
 router.get("/leave-request/:id", getLeaveRequest);
 router.patch(
   "/leave-request/:id/approve",

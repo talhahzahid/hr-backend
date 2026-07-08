@@ -57,6 +57,37 @@ export const createLeaveRequestService = async (data) => {
   }
 };
 
+export const getEmployeeLeavesService = async (employeeId, page, limit, status) => {
+  try {
+    await ensureEmployeeExists(employeeId);
+
+    const pageNumber = Number(page) || 1;
+    const pageSize = Number(limit) || 10;
+    const offset = (pageNumber - 1) * pageSize;
+    const where = { employeeId };
+
+    if (status) where.status = status;
+
+    const { count, rows } = await LeaveRequest.findAndCountAll({
+      where,
+      limit: pageSize,
+      offset,
+      order: [["id", "DESC"]],
+    });
+
+    return {
+      employeeId: Number(employeeId),
+      leaveRequests: rows,
+      totalRecords: count,
+      totalPages: Math.ceil(count / pageSize),
+      currentPage: pageNumber,
+      pageSize,
+    };
+  } catch (error) {
+    throw error;
+  }
+};
+
 export const getLeaveRequestService = async (id, page, limit, filters = {}) => {
   try {
     if (id) {

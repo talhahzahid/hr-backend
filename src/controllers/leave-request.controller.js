@@ -2,6 +2,7 @@ import {
   approveLeaveRequestService,
   cancelLeaveRequestService,
   createLeaveRequestService,
+  getEmployeeLeavesService,
   getLeaveRequestService,
   rejectLeaveRequestService,
 } from "../service/leave-request.service.js";
@@ -23,6 +24,28 @@ export const createLeaveRequest = async (req, res) => {
       success: true,
       message: "Leave request created successfully",
       data: leaveRequest,
+    });
+  } catch (error) {
+    return handleError(res, error);
+  }
+};
+
+export const getEmployeeLeaves = async (req, res) => {
+  const { employeeId } = req.params;
+  const { page = 1, limit = 10, status } = req.query;
+
+  try {
+    const leaves = await getEmployeeLeavesService(
+      employeeId,
+      page,
+      limit,
+      status,
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Employee leave requests fetched successfully",
+      data: leaves,
     });
   } catch (error) {
     return handleError(res, error);

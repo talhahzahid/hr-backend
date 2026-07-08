@@ -1,9 +1,19 @@
-import Employee from "../models/employee.models.js  ";
+import bcrypt from "bcryptjs";
+import Employee from "../models/employee.models.js";
 
 export const createEmployeeService = async (data) => {
   try {
-    const employee = await Employee.create(data);
-    return employee;
+    const hashedPassword = await bcrypt.hash(data.password, 10);
+
+    const employee = await Employee.create({
+      ...data,
+      password: hashedPassword,
+    });
+
+    const employeeData = employee.toJSON();
+    delete employeeData.password;
+
+    return employeeData;
   } catch (error) {
     throw error;
   }
@@ -12,16 +22,21 @@ export const createEmployeeService = async (data) => {
 export const getEmployeeService = async (id, page, limit) => {
   try {
     if (id) {
-      return await Employee.findByPk(id);
+      return await Employee.findByPk(id, {
+        attributes: { exclude: ["password"] },
+      });
     }
+
     const pageNumber = Number(page);
     const pageSize = Number(limit);
     const offset = (pageNumber - 1) * pageSize;
     const { count, rows } = await Employee.findAndCountAll({
+      attributes: { exclude: ["password"] },
       limit: pageSize,
       offset,
       order: [["id", "DESC"]],
     });
+
     return {
       employees: rows,
       totalRecords: count,
