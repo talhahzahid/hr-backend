@@ -2,6 +2,8 @@ import { Op } from "sequelize";
 import Attendance from "../models/attendance.model.js";
 import Employee from "../models/employee.models.js";
 
+const getTodayDate = () => new Date().toISOString().split("T")[0];
+
 export const checkInService = async (employeeId) => {
   try {
     const employee = await Employee.findByPk(employeeId);
@@ -11,7 +13,7 @@ export const checkInService = async (employeeId) => {
       throw error;
     }
 
-    const today = new Date().toISOString().split("T")[0];
+    const today = getTodayDate();
     const now = new Date();
 
     const existing = await Attendance.findOne({
@@ -43,37 +45,36 @@ export const checkInService = async (employeeId) => {
   }
 };
 
-
-export const checkOutService = async (id, checkOutTime) => {
+export const checkOutService = async (employeeId) => {
   try {
-    console.log("👉 Checkout called with param:", id);
-
-    let attendance = await Attendance.findByPk(id);
-
-    // Fallback: agar id se attendance na mile, to isay employeeId maan kar
-    // aaj ki date ka open (not-checked-out) record dhoondo
-    if (!attendance) {
-      const today = new Date().toISOString().split("T")[0];
-      attendance = await Attendance.findOne({
-        where: { employeeId: id, date: today },
-      });
-    }
-
-    if (!attendance) {
-      const error = new Error("Attendance not found");
+    const employee = await Employee.findByPk(employeeId);
+    if (!employee) {
+      const error = new Error("Employee not found");
       error.statusCode = 404;
       throw error;
     }
 
-    console.log("👉 Found attendance BEFORE update:", attendance.toJSON());
+    const today = getTodayDate();
 
-    if (attendance.checkOutTime) {
-      const error = new Error("Employee has already checked out");
+    const attendance = await Attendance.findOne({
+      where: { employeeId, date: today },
+    });
+
+    if (!attendance) {
+      const error = new Error(
+        "No check-in found for today. Please check in first",
+      );
       error.statusCode = 400;
       throw error;
     }
 
-    const outTime = checkOutTime ? new Date(checkOutTime) : new Date();
+    if (attendance.checkOutTime) {
+      const error = new Error("Employee has already checked out today");
+      error.statusCode = 400;
+      throw error;
+    }
+
+    const outTime = new Date();
 
     if (outTime <= new Date(attendance.checkInTime)) {
       const error = new Error("Check-out time must be after check-in time");
@@ -89,51 +90,13 @@ export const checkOutService = async (id, checkOutTime) => {
       workingHours,
     });
 
-    const updatedAttendance = await Attendance.findByPk(attendance.id);
-    console.log("✅ Attendance AFTER update:", updatedAttendance.toJSON());
+    await attendance.reload();
 
-    return updatedAttendance;
+    return attendance;
   } catch (error) {
     throw error;
   }
 };
-
-// export const checkOutService = async (id, checkOutTime) => {
-//   try {
-//     const attendance = await Attendance.findByPk(id);
-//     if (!attendance) {
-//       const error = new Error("Attendance not found");
-//       error.statusCode = 404;
-//       throw error;
-//     }
-
-//     if (attendance.checkOutTime) {
-//       const error = new Error("Employee has already checked out");
-//       error.statusCode = 400;
-//       throw error;
-//     }
-
-//     const outTime = checkOutTime ? new Date(checkOutTime) : new Date();
-
-//     if (outTime <= new Date(attendance.checkInTime)) {
-//       const error = new Error("Check-out time must be after check-in time");
-//       error.statusCode = 400;
-//       throw error;
-//     }
-
-//     const diffMs = outTime - new Date(attendance.checkInTime);
-//     const workingHours = Number((diffMs / (1000 * 60 * 60)).toFixed(2));
-
-//     await attendance.update({
-//       checkOutTime: outTime,
-//       workingHours,
-//     });
-
-//     return attendance;
-//   } catch (error) {
-//     throw error;
-//   }
-// };
 
 export const getAttendanceService = async (id, page, limit, filters = {}) => {
   try {
@@ -173,7 +136,10 @@ export const getAttendanceService = async (id, page, limit, filters = {}) => {
       where,
       limit: pageSize,
       offset,
-      order: [["date", "DESC"], ["id", "DESC"]],
+      order: [
+        ["date", "DESC"],
+        ["id", "DESC"],
+      ],
     });
 
     return {

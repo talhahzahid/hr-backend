@@ -15,7 +15,7 @@ const router = express.Router();
 router.use(protect);
 
 router.post("/check-in", validateCheckIn, checkIn);
-router.patch("/attendance/:id/check-out", validateCheckOut, checkOut);
+router.patch("/check-out", validateCheckOut, checkOut);
 router.get("/get-all", getAttendance);
 router.get("/attendance/:id", getAttendance);
 
