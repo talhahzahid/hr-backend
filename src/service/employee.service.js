@@ -1,5 +1,6 @@
 import bcrypt from "bcryptjs";
 import Employee from "../models/employee.models.js";
+import { allocateLeaveBalancesOnJoin } from "./leave-balance.service.js";
 
 export const createEmployeeService = async (data) => {
   try {
@@ -10,8 +11,14 @@ export const createEmployeeService = async (data) => {
       password: hashedPassword,
     });
 
+    const leaveBalances = await allocateLeaveBalancesOnJoin(
+      employee.id,
+      employee.dateOfJoining,
+    );
+
     const employeeData = employee.toJSON();
     delete employeeData.password;
+    employeeData.leaveBalances = leaveBalances;
 
     return employeeData;
   } catch (error) {

@@ -27,7 +27,7 @@ export const checkOut = async (req, res) => {
     const { id } = req.params;
     const { checkOutTime } = req.body;
     const attendance = await checkOutService(id, checkOutTime);
-
+    console.log(attendance);
     return res.status(200).json({
       success: true,
       message: "Check-out recorded successfully",
@@ -43,7 +43,15 @@ export const checkOut = async (req, res) => {
 
 export const getAttendance = async (req, res) => {
   const { id } = req.params;
-  const { page = 1, limit = 10, employeeId, status, date, month, year } = req.query;
+  const {
+    page = 1,
+    limit = 10,
+    employeeId,
+    status,
+    date,
+    month,
+    year,
+  } = req.query;
 
   try {
     const attendance = await getAttendanceService(id, page, limit, {
@@ -53,7 +61,8 @@ export const getAttendance = async (req, res) => {
       month,
       year,
     });
-
+    console.log(attendance);
+    // return
     return res.status(200).json({
       success: true,
       message: "Attendance fetched successfully",

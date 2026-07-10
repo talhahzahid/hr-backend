@@ -1,6 +1,11 @@
+import moment from "moment";
 import { ValidationError } from "sequelize";
 import Employee from "../models/employee.models.js";
 import LeaveRequest from "../models/leave-request.model.js";
+import {
+  deductLeaveBalance,
+  ensureSufficientBalance,
+} from "./leave-balance.service.js";
 
 const ensureEmployeeExists = async (employeeId) => {
   const employee = await Employee.findByPk(employeeId);
@@ -30,10 +35,17 @@ const ensurePendingStatus = (leaveRequest) => {
 };
 
 export const createLeaveRequestService = async (data) => {
-  console.log(data , 'data')
   try {
     await ensureEmployeeExists(data?.employeeId);
-// return
+
+    const leaveYear = moment(data.startDate).year();
+    await ensureSufficientBalance(
+      data.employeeId,
+      data.leaveType,
+      data.totalDays,
+      leaveYear,
+    );
+
     const leaveRequest = await LeaveRequest.create({
       employeeId: data.employeeId,
       leaveType: data.leaveType,
@@ -132,6 +144,14 @@ export const approveLeaveRequestService = async (id, approvedBy) => {
 
     const leaveRequest = await findLeaveRequestOrThrow(id);
     ensurePendingStatus(leaveRequest);
+
+    const leaveYear = moment(leaveRequest.startDate).year();
+    await deductLeaveBalance(
+      leaveRequest.employeeId,
+      leaveRequest.leaveType,
+      leaveRequest.totalDays,
+      leaveYear,
+    );
 
     await leaveRequest.update({
       status: "Approved",
