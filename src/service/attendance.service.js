@@ -1,8 +1,15 @@
 import { Op } from "sequelize";
 import Attendance from "../models/attendance.model.js";
 import Employee from "../models/employee.models.js";
+import { getMonthRange } from "../utils/date-range.js";
 
-const getTodayDate = () => new Date().toISOString().split("T")[0];
+const getTodayDate = () => {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, "0");
+  const d = String(now.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+};
 
 export const checkInService = async (employeeId) => {
   try {
@@ -110,23 +117,43 @@ export const getAttendanceService = async (id, page, limit, filters = {}) => {
       return attendance;
     }
 
-    const pageNumber = Number(page);
-    const pageSize = Number(limit);
+    const pageNumber = Number(page) || 1;
+    const pageSize = Number(limit) || 10;
     const offset = (pageNumber - 1) * pageSize;
     const where = {};
 
-    if (filters.employeeId) where.employeeId = filters.employeeId;
+    if (filters.employeeId) where.employeeId = Number(filters.employeeId);
     if (filters.status) where.status = filters.status;
 
-    if (filters.month && filters.year) {
-      const month = String(filters.month).padStart(2, "0");
-      const year = filters.year;
-      const startDate = `${year}-${month}-01`;
-      const lastDay = new Date(year, filters.month, 0).getDate();
-      const endDate = `${year}-${month}-${lastDay}`;
+    const hasMonth =
+      filters.month !== undefined &&
+      filters.month !== null &&
+      filters.month !== "";
+    const hasYear =
+      filters.year !== undefined &&
+      filters.year !== null &&
+      filters.year !== "";
+
+    let resolvedMonth = null;
+    let resolvedYear = null;
+    let range = null;
+
+    if (hasMonth || hasYear) {
+      const now = new Date();
+      const month = hasMonth ? Number(filters.month) : now.getMonth() + 1;
+      const year = hasYear ? Number(filters.year) : now.getFullYear();
+      const monthRange = getMonthRange(month, year);
 
       where.date = {
-        [Op.between]: [startDate, endDate],
+        [Op.gte]: monthRange.startDate,
+        [Op.lt]: monthRange.nextMonthStart,
+      };
+
+      resolvedMonth = monthRange.month;
+      resolvedYear = monthRange.year;
+      range = {
+        startDate: monthRange.startDate,
+        endDate: monthRange.endDate,
       };
     } else if (filters.date) {
       where.date = filters.date;
@@ -151,9 +178,10 @@ export const getAttendanceService = async (id, page, limit, filters = {}) => {
       filters: {
         employeeId: filters.employeeId || null,
         status: filters.status || null,
-        month: filters.month || null,
-        year: filters.year || null,
+        month: resolvedMonth,
+        year: resolvedYear,
         date: filters.date || null,
+        range,
       },
     };
   } catch (error) {

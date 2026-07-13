@@ -19,6 +19,7 @@ export const createEmployee = async (req, res) => {
     });
   }
 };
+
 export const getEmployee = async (req, res) => {
   const { id } = req.params;
   const { page = 1, limit = 10 } = req.query;

@@ -7,6 +7,7 @@ import authRouter from "./src/routes/auth.routes.js";
 import leaveRouter from "./src/routes/leave-request.routes.js";
 import leaveBalanceRouter from "./src/routes/leave-balance.routes.js";
 import attendanceRouter from "./src/routes/attendance.routes.js";
+import dashboardRouter from "./src/routes/dashboard.routes.js";
 import LeaveRequest from "./src/models/leave-request.model.js";
 import LeaveBalance from "./src/models/leave-balance.model.js";
 import Attendance from "./src/models/attendance.model.js";
@@ -28,6 +29,7 @@ app.use("/api/auth", authRouter);
 app.use("/api/v2", leaveRouter);
 app.use("/api/v2", leaveBalanceRouter);
 app.use("/api/v3", attendanceRouter);
+app.use("/api/v4/dashboard", dashboardRouter);
 
 const startServer = async () => {
   try {
