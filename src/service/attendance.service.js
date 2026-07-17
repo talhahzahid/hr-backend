@@ -3,6 +3,12 @@ import Attendance from "../models/attendance.model.js";
 import Employee from "../models/employee.models.js";
 import { getMonthRange } from "../utils/date-range.js";
 
+const employeeInclude = {
+  model: Employee,
+  as: "employee",
+  attributes: ["id", "firstName", "lastName"],
+};
+
 const getTodayDate = () => {
   const now = new Date();
   const y = now.getFullYear();
@@ -45,6 +51,8 @@ export const checkInService = async (employeeId) => {
       status,
       workingHours: null,
     });
+
+    await attendance.reload({ include: [employeeInclude] });
 
     return attendance;
   } catch (error) {
@@ -97,7 +105,7 @@ export const checkOutService = async (employeeId) => {
       workingHours,
     });
 
-    await attendance.reload();
+    await attendance.reload({ include: [employeeInclude] });
 
     return attendance;
   } catch (error) {
@@ -108,7 +116,9 @@ export const checkOutService = async (employeeId) => {
 export const getAttendanceService = async (id, page, limit, filters = {}) => {
   try {
     if (id) {
-      const attendance = await Attendance.findByPk(id);
+      const attendance = await Attendance.findByPk(id, {
+        include: [employeeInclude],
+      });
       if (!attendance) {
         const error = new Error("Attendance not found");
         error.statusCode = 404;
@@ -163,6 +173,7 @@ export const getAttendanceService = async (id, page, limit, filters = {}) => {
       where,
       limit: pageSize,
       offset,
+      include: [employeeInclude],
       order: [
         ["date", "DESC"],
         ["id", "DESC"],

@@ -1,5 +1,6 @@
 import { DataTypes } from "sequelize";
 import { sequelize } from "../config/database.js";
+import Employee from "./employee.models.js";
 
 const Attendance = sequelize.define(
   "Attendance",
@@ -72,12 +73,9 @@ const Attendance = sequelize.define(
   },
 );
 
-// Association
-Attendance.associate = (models) => {
-  Attendance.belongsTo(models.Employee, {
-    foreignKey: "employeeId",
-    as: "employee",
-  });
-};
+Attendance.belongsTo(Employee, {
+  foreignKey: "employeeId",
+  as: "employee",
+});
 
 export default Attendance;

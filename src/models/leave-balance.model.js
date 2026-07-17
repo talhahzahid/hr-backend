@@ -1,5 +1,6 @@
 import { DataTypes } from "sequelize";
 import { sequelize } from "../config/database.js";
+import Employee from "./employee.models.js";
 
 const LeaveBalance = sequelize.define(
   "LeaveBalance",
@@ -84,5 +85,10 @@ const LeaveBalance = sequelize.define(
     ],
   },
 );
+
+LeaveBalance.belongsTo(Employee, {
+  foreignKey: "employeeId",
+  as: "employee",
+});
 
 export default LeaveBalance;

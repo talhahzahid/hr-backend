@@ -1,5 +1,6 @@
 import {
   allocateMissingBalancesService,
+  getAllLeaveBalancesService,
   getLeaveBalancesService,
 } from "../service/leave-balance.service.js";
 
@@ -9,6 +10,26 @@ const handleError = (res, error) => {
     success: false,
     message: error.message,
   });
+};
+
+export const getAllLeaveBalances = async (req, res) => {
+  const { page = 1, limit = 10, employeeId, leaveType, year } = req.query;
+
+  try {
+    const data = await getAllLeaveBalancesService(page, limit, {
+      employeeId,
+      leaveType,
+      year,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "All leave balances fetched successfully",
+      data,
+    });
+  } catch (error) {
+    return handleError(res, error);
+  }
 };
 
 export const getLeaveBalances = async (req, res) => {

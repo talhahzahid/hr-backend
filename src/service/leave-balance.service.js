@@ -6,6 +6,19 @@ import {
 import Employee from "../models/employee.models.js";
 import LeaveBalance from "../models/leave-balance.model.js";
 
+const employeeInclude = {
+  model: Employee,
+  as: "employee",
+  attributes: [
+    "id",
+    "firstName",
+    "lastName",
+    "email",
+    "departmentName",
+    "designation",
+  ],
+};
+
 /**
  * Prorate full-year quota by remaining months in the joining year.
  * Joining month is included (Jan → 12 months, Jul → 1 month).
@@ -69,6 +82,53 @@ export const allocateLeaveBalancesOnJoin = async (
   }
 
   return balances;
+};
+
+export const getAllLeaveBalancesService = async (
+  page,
+  limit,
+  filters = {},
+) => {
+  const pageNumber = Number(page) || 1;
+  const pageSize = Number(limit) || 10;
+  const offset = (pageNumber - 1) * pageSize;
+  const where = {};
+
+  if (filters.employeeId) {
+    where.employeeId = Number(filters.employeeId);
+  }
+
+  if (filters.leaveType) {
+    where.leaveType = filters.leaveType;
+  }
+
+  const targetYear = filters.year ? Number(filters.year) : moment().year();
+  where.year = targetYear;
+
+  const { count, rows } = await LeaveBalance.findAndCountAll({
+    where,
+    limit: pageSize,
+    offset,
+    include: [employeeInclude],
+    order: [
+      ["employeeId", "ASC"],
+      ["leaveType", "ASC"],
+    ],
+  });
+
+  return {
+    leaveBalances: rows,
+    totalRecords: count,
+    totalPages: Math.ceil(count / pageSize),
+    currentPage: pageNumber,
+    pageSize,
+    filters: {
+      employeeId: filters.employeeId ? Number(filters.employeeId) : null,
+      leaveType: filters.leaveType || null,
+      year: targetYear,
+    },
+    quotas: LEAVE_QUOTAS,
+  };
 };
 
 export const getLeaveBalancesService = async (employeeId, year) => {
